@@ -5,6 +5,13 @@ way welcome to the doucmentation.
 
 For starters if you don't have any of the databases main.py will create them, if you read main.py it explains a decent bit..
 
+Setup:
+  - download/git copy the repo
+  - fill out config.json
+  - pip install -r requirements.txt
+  - pyhton(3) main.py
+
+
 
 Features:
 - Reminders
