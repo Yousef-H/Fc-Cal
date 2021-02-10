@@ -39,7 +39,7 @@ except Exception as e:
 
 bot = commands.Bot(command_prefix=get_prefix, case_insensitive=True, intents=intents)
 bot.remove_command('help')
-# These are the extensions in the ./cogs folder. I don't recommend removing any if you want the whole bot to work as it did before I released code..
+# These are the extensions in the ./cogs folder. I don't recommend removing any if you want the whole bot to work as it did before..
 cogs = [
     'cogs.reminder',
     'cogs.cal',
