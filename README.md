@@ -5,6 +5,8 @@ way welcome to the doucmentation.
 
 For starters if you don't have any of the databases main.py will create them, if you read main.py it explains a decent bit..
 
+Got some help from: https://gist.github.com/meskarune/63600e64df56a607efa211b9a87fb443
+
 Setup:
   - download/git copy the repo
   - fill out config.json
