@@ -187,7 +187,7 @@ class Cal(commands.Cog):
             except ValueError:
                 user = self.bot.get_user(user_id)
                 try:
-                    await user.send("You disabled your ical link. if you didn't contact Yousef#9999")
+                    await user.send("You disabled your ical link. if you didn't contact the owner of this bot!")
                 except:
                     pass
                 self.functions.force_ical_updates_off(user_id=user_id)
