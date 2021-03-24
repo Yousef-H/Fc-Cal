@@ -158,9 +158,8 @@ class User_guild_setup(commands.Cog):
                                                                error=f"Prefix limit is 4!")
                         await ctx.send(embed=error_msg)
                     else:
-                        if self.functions.update_prefix(prefix=prefix, guild_id=ctx.guild.id) is True:
-                            await ctx.send(
-                                f"The prefix has been changed to {prefix}\nYou can now use {self.bot.user.mention} or {prefix} to do commands.")
+                        await self.functions.update_prefix(prefix=prefix, guild_id=ctx.guild.id)
+                        await ctx.send(f"The prefix has been changed to {prefix}\nYou can now use {self.bot.user.mention} or {prefix} to do commands.")
 
                 else:
                     error_msg = self.functions.error_embed(title="Invalid permissions!",
@@ -181,7 +180,7 @@ class User_guild_setup(commands.Cog):
             await bot_entry[0].user.send(embed=embed)
         except Exception as e:
             pass
-        dinosaur = self.functions.insert_guild_id(guild.id)
+        await self.functions.insert_guild_id(guild.id)
 
     #       join_logger = self.functions.guild_join_logger(name=guild, guild_id=guild.id)
 
@@ -267,7 +266,7 @@ class User_guild_setup(commands.Cog):
                                             await ctx.send(
                                                 "Either send the channel ID or tag the channel you'd lke MIDDLE school class alerts in")
                                             await asyncio.sleep(.250)
-                                            msg = await self.bot.wait_for('message', timeout=30, check=check_channel)
+                                            msg, user__ = await self.bot.wait_for('message', timeout=30, check=check_channel)
                                             middle_school_channel_id = msg.content
                                         except asyncio.TimeoutError:
                                             raise asyncio.TimeoutError

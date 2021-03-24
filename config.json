@@ -1,7 +1,7 @@
 {
   "token": "token",
-  "black_list_log_id": 00000,
-  "bot_owner_id": 00000,
+  "prefix": ".",
+  "black_list_log_id": 000000,
   "logger_webhook": "link",
-  "beta": "false"
+  "bot_owner_id": 292848897632632835
 }

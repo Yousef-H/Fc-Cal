@@ -30,7 +30,6 @@ class User_guild_setup(commands.Cog):
     #
     # Message idea: @everyone there is 5 minutes before {prd} starts! Be sure to join before that
     # @everyone there is only 5 minutes left of {prd}! :party:
-    # this works for middleschool and highschoolers with the set times (read below)
 
     @tasks.loop(minutes=1)
     async def high_school_mentions(self):

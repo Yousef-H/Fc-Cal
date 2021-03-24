@@ -13,16 +13,38 @@ intents.members = True
 
 with open("./config.json") as configfile:
     config = json.load(configfile)
-    #    var = config.get('value')
+    bot_owner = int(config.get('bot_owner_id'))
+
+
+def insert_guild_id(guild_id):
+    db = sqlite3.connect('bot_db.sqlite')
+    cursor = db.cursor()
+    sql = (f"SELECT * FROM guild_settings WHERE guild_id = {guild_id}")
+    cursor.execute(sql)
+    check = cursor.fetchone()
+    if check is None:
+        sql2 = ("INSERT INTO guild_settings(guild_id,prefix,guild_embed_color,done_setup) VALUES(?,?,?,?)")
+        val2 = (guild_id, ".", "cyan", 0)
+        cursor.execute(sql2, val2)
+        db.commit()
+        cursor.close()
+        db.close()
+        return
+    else:
+        return
 
 
 def get_guild_prefix(g_id):  # per guild prefix
-    db = sqlite3.connect('guild_settings.sqlite')
+    db = sqlite3.connect('bot_db.sqlite')
     cursor = db.cursor()
     sql = f"SELECT prefix FROM guild_settings WHERE guild_id = {g_id}"
     cursor.execute(f"{sql}")
     result = cursor.fetchone()
-    return str(result[0])
+    if result is None:
+        insert_guild_id(g_id)
+        return "."
+    else:
+        return str(result[0])
 
 
 def get_prefix(bot, message):
@@ -31,23 +53,19 @@ def get_prefix(bot, message):
     else:
         return when_mentioned_or(".")(bot, message)
 
-try:
-    bot_owner = int(config['bot_owner_id'])
-except Exception as e:
-    print(f"Error! {e} (could be caused by an invalid config, or if you didn't put the DISCORD ID)")
-
 
 bot = commands.Bot(command_prefix=get_prefix, case_insensitive=True, intents=intents)
 bot.remove_command('help')
-# These are the extensions in the ./cogs folder. I don't recommend removing any if you want the whole bot to work as it did before..
+# These are the extensions in the ./cogs folder. I don't recommend removing any if you want the whole bot to work as it did before I released code..
 cogs = [
     'cogs.reminder',
     'cogs.cal',
     'cogs.user_guild_setup',
+    'cogs.changelog',
     'cogs.basic_commands',
     'cogs.before_after_class']
 
-print(f"discord.py version installed: {discord.__version__}\nAttempting to load cogs...\n")
+print(f"Discord.py version installed {discord.__version__}\n")
 
 @bot.event
 async def on_ready():
@@ -59,27 +77,11 @@ async def on_ready():
         except discord.ext.commands.errors.ExtensionAlreadyLoaded:
             pass
     await bot.change_presence(status=discord.Status.do_not_disturb,
-                              activity=discord.Activity(type=discord.ActivityType.watching, name="people's calenders"))
+                              activity=discord.Activity(type=discord.ActivityType.watching, name="Bug fixes maybe?"))
     print(f"Logged in as {bot.user}")
-    try:
-        await bot.wait_until_ready()
-        if str(config['beta']).lower() == "true":
-            print("Beta mode enabled")
-            want_updates = Funcs.get_userid_and_ical()
-            for user in want_updates:
-                user = user[0]
-                user_name = bot.get_user(user)
-                Funcs.set_users_as_beta(user_id=user)
-                print(f"Using beta I turned {user_name}'s ICAL due to beta! (Discord ID:{user})") #will say nontype since users arent in the cache
-        elif str(config['beta']).lower() == "false":
-            print("Production mode enabled")
-        else:
-            print("Production mode enabled - invalid argument in config")
-    except KeyError:
-        print("Production mode enabled - not specified in the config.")
-    db = sqlite3.connect('reminders.sqlite')
+    db = sqlite3.connect('bot_db.sqlite')
     cursor = db.cursor()
-    cursor.execute('''
+    commands_ = ('''
         CREATE TABLE IF NOT EXISTS reminders(
         reminder_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT,
@@ -88,13 +90,7 @@ async def on_ready():
         reminder TEXT,
         valid INTEGER
         )
-    ''')
-    cursor.close()
-    db.commit()
-    db.close()
-    blacklist = sqlite3.connect('blacklist.sqlite')
-    cursor2 = blacklist.cursor()
-    cursor2.execute('''
+    ''', '''
         CREATE TABLE IF NOT EXISTS blacklist(
         blacklist_id INTEGER PRIMARY KEY AUTOINCREMENT,
         punisher_user_id TEXT,
@@ -102,13 +98,7 @@ async def on_ready():
         reason TEXT,
         valid INT
         )
-        ''')
-    cursor2.close()
-    blacklist.commit()
-    blacklist.close()
-    user_settings = sqlite3.connect('user_settings.sqlite')
-    cursor3 = user_settings.cursor()
-    cursor3.execute('''
+        ''','''
         CREATE TABLE IF NOT EXISTS user_settings(
         custom_user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         discord_user_id TEXT,
@@ -117,13 +107,7 @@ async def on_ready():
         old_text TEXT
 
         )
-    ''')
-    cursor3.close()
-    user_settings.commit()
-    user_settings.close()
-    guild_settings = sqlite3.connect('guild_settings.sqlite')
-    cursor4 = guild_settings.cursor()
-    cursor4.execute('''
+    ''', '''
         CREATE TABLE IF NOT EXISTS guild_settings(
             guild_id INTEGER PRIMARY KEY,
             prefix TEXT DEFAULT ".",
@@ -137,49 +121,23 @@ async def on_ready():
             
         )
     ''')
-    user_to_do = sqlite3.connect('user_to_do.sqlite')  # this is for a planned update but I never got around to creating it before i released the source.
-    cursor5 = user_to_do.cursor()
-    cursor5.execute('''
-        CREATE TABLE IF NOT EXISTS user_to_do(
-        user_id INTEGER PRIMARY KEY,
-        to_do1 TEXT
-        )
-    ''')
+    for cmd in commands_:
+        cursor.execute(cmd)
+    cursor.close()
+    db.commit()
+    db.close()
 
 
 @bot.command()
-async def status(ctx, *, status=None):
+async def status(ctx, *, status_=None):
     if ctx.message.author.id == bot_owner:
-        if status is None:
+        if status_ is None:
             await ctx.send(f"Invaild useage of the command! {ctx.prefix}status <status>")
         else:
             await bot.change_presence(status=discord.Status.do_not_disturb,
                                       activity=discord.Activity(type=discord.ActivityType.watching,
-                                                                name=f"{status}"))
-            await ctx.send(f"Don't tell anyone but I changed the status to {status}")
-
-
-@bot.command()
-async def unbeta(ctx, user_id=None):
-    if ctx.message.author.id == bot_owner:
-        user_id = ctx.message.author.id if user_id is None else user_id
-        if user_id == "*":
-            want_updates = Funcs.get_beta_userid_and_ical()
-            for user in want_updates:
-                user = user[0]
-                user_name = bot.get_user(user)
-                Funcs.set_users_as_normal(user_id=user)
-                print(f"{user_name}'s auto announce has been enabled ({user_id})")
-        else:
-            try:
-                Funcs.set_users_as_normal(user_id=user_id)
-                user_name = bot.get_user(user_id)
-                print(f"{user_name}'s auto announce has been enabled ({user_id})")
-                await ctx.send("Done!")
-            except Exception as e:
-                await ctx.send(f"Error! {e}")
-
-
+                                                                name=f"{status_}"))
+            await ctx.send(f"Don't tell anyone but I changed the status to {status_}")
 
 @bot.command()
 async def reload(ctx, cog):
@@ -262,15 +220,10 @@ async def unload(ctx, cog):
                 await msg.edit(content=f"An error occurred")
             await msg.edit(content=f"Unloaded {cog}")
 
-@bot.command()
-async def info(ctx):
-    embed = discord.Embed(title="Bot Info", description="Hey! I am a bot that was made to help students keep track of work.\nYou can find my original creator at https://discord.gg/eQCAV3jF\nGitHub:\nOriginal author discord id: 292848897632632835", color=discord.colour.Color.purple())
-    await ctx.send(embed=embed)
-
 
 @bot.event
 async def on_command_error(ctx, error):
-    if isinstance(error, discord.ext.commands.errors.CommandNotFound): 
+    if isinstance(error, discord.ext.commands.errors.CommandNotFound):
         return
 
 

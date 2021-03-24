@@ -7,11 +7,10 @@ from blacklist_functions import Blacklist
 
 with open("./config.json") as f:
     config = json.load(f)
+    bot_owner = int(config.get('bot_owner_id'))
 
-try:
-    bot_owner = int(config['bot_owner_id'])
-except Exception as e:
-    print(f"Error! {e} (could be caused by an invalid config, or if you didn't put the DISCORD ID) (basic_commands.py)")
+
+# the config isnt used at all in this file.
 
 class Commands(commands.Cog):
     def __init__(self, bot):
@@ -22,7 +21,7 @@ class Commands(commands.Cog):
     # BOT_CHECK IS GLOBAL BLACKLISTING
 
     async def bot_check(self, ctx):
-        if ctx.message.author.id == bot_owner: # bypass blacklists.
+        if ctx.message.author.id == bot_owner:
             return True
         elif self.blacklist.is_user_blacklisted(ctx.message.author.id) is True:
             em = self.functions.error_embed(title=f"Error!", error=f"You're blacklisted!")
@@ -38,7 +37,7 @@ class Commands(commands.Cog):
             embed = discord.Embed(title=f"{self.bot.user.name} Help!", url="https://discord.gg/s4g9RwzZkT",
                                   description="This bot was made to help students keep track assignments this is a VERY vague outline on the commands we currently have on this bot.",
                                   color=self.functions.get_guild_color(ctx.guild.id))
-        if isinstance(ctx.channel, discord.channel.DMChannel):
+        else:
             embed = discord.Embed(title=f"{self.bot.user.name} Help!", url="https://discord.gg/s4g9RwzZkT",
                                   description="This bot was made to help students keep track assignments this is a VERY vague outline on the commands we currently have on this bot.",
                                   color=0x00fbff)
@@ -57,25 +56,22 @@ class Commands(commands.Cog):
                         inline=False)
         embed.set_footer(
             text=f"Help requested by {ctx.message.author.name}. Join the support server if you encounter any problems.")
-        msg = await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command()
-    async def blacklist(self, ctx, user_id, *, reason=None):
-        if ctx.message.author.id == bot_owner: # only bot owner can blacklist.
+    async def blacklist(self, ctx, user: discord.Member=None, *, reason=None):
+        if ctx.message.author.id == bot_owner:
+            if user is None:
+                await ctx.send("I cant blacklist air!")
+                return
             if reason is None:
                 reason = "No reason provided."
-            if "<@!" in str(user_id) or "<@" in str(user_id):
-                user_id = str(user_id).replace("<@!", "")
-                user_id = str(user_id).replace("<@", "")
-            if ">" in str(user_id):
-                user_id = str(user_id).replace(">", "")
-            check_if_blacklist = self.blacklist.is_user_blacklisted(user_id=user_id)
+            check_if_blacklist = self.blacklist.is_user_blacklisted(user_id=user.id)
             if check_if_blacklist is True:
-                await ctx.send(f"<@{user_id}> is already blacklisted.")
+                await ctx.send(f"<@{user.id}> is already blacklisted.")
             elif check_if_blacklist is False:
-                self.blacklist.insert_blacklist(user_id=user_id, punishier_id=ctx.message.author.id, reason=reason)
-                await ctx.send(f"<@{user_id}> is now blacklisted with the reason:\n\n{reason}")
-                user = self.bot.get_user(int(user_id))
+                self.blacklist.insert_blacklist(user_id=user.id, punishier_id=ctx.message.author.id, reason=reason)
+                await ctx.send(f"<@{user.id}> is now blacklisted with the reason:\n\n{reason}")
                 try:
                     embed = discord.Embed(title=f"You are now blacklisted!",
                                           description=f"You were blacklisted by {ctx.message.author.mention} with the reason:\n\n{reason}",
@@ -94,18 +90,12 @@ class Commands(commands.Cog):
             return
 
     @commands.command()
-    async def unblacklist(self, ctx, user_id):
-        if ctx.message.author.id == bot_owner: # only bot owner can unblacklist.
-            if "<@!" in str(user_id) or "<@" in str(user_id):
-                user_id = str(user_id).replace("<@!", "")
-                user_id = str(user_id).replace("<@", "")
-            if ">" in str(user_id):
-                user_id = str(user_id).replace(">", "")
-            check_if_blacklist = self.blacklist.is_user_blacklisted(user_id=user_id)
-            user = self.bot.get_user(int(user_id))
+    async def unblacklist(self, ctx, user: discord.Member):
+        if ctx.message.author.id == bot_owner:
+            check_if_blacklist = self.blacklist.is_user_blacklisted(user_id=user.id)
             if check_if_blacklist is True:
-                self.blacklist.unblacklist_user(user_id=user_id)
-                await ctx.send(f"<@{user_id}> is no longer blacklisted")
+                self.blacklist.unblacklist_user(user_id=user.id)
+                await ctx.send(f"<@{user.id}> is no longer blacklisted")
                 try:
                     embed = discord.Embed(title=f"You are no longer blacklisted!",
                                           description=f"{ctx.message.author.mention} has unblacklisted you from using {self.bot.user.mention}\n\nTry not to abuse our bot to avoid being blacklisted again, as we're now keeping an eye on you",
@@ -120,13 +110,13 @@ class Commands(commands.Cog):
                                    color=0x2eb82e)
                 await channel.send(embed=em)
             elif check_if_blacklist is False:
-                await ctx.send(f"{user_id} isn't blacklisted..")
+                await ctx.send(f"{user.mention} isn't blacklisted..")
         else:
             return
 
     @commands.command()
     async def checkblacklist(self, ctx, user_id):
-        if ctx.message.author.id == bot_owner: # only bot owner can check blacklists.
+        if ctx.message.author.id == bot_owner:
             if "<@!" in str(user_id) or "<@" in str(user_id):
                 user_id = str(user_id).replace("<@!", "")
                 user_id = str(user_id).replace("<@", "")
