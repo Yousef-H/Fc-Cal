@@ -8,7 +8,7 @@ colorama==0.4.4
 discord==1.0.1
 discord-timers==0.1.0
 discord-webhook==0.11.0
-discord.py==1.7.0
+discord.py==1.7.1
 icalendar==4.0.7
 ics==0.7
 idna==2.10
